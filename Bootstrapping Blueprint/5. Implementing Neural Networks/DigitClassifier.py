@@ -8,7 +8,7 @@ class Solution(nn.Module):
         torch.manual_seed(0)
         # Define the architecture here
         self.first_layer = nn.Linear(784, 512)
-        self.relu = nn.ReLU()
+        self.relu = nn.ReLU()       # introduces nonlinearity to allow model to learn more complex relationships
         self.dropout = nn.Dropout(0.2)
         self.final_layer = nn.Linear(512, 10)
         self.sigmoid = nn.Sigmoid()     # makes all outputs between 0 and 1 to represent a probability
