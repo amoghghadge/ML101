@@ -17,12 +17,12 @@ class Solution(nn.Module):
         # Return a B, 1 tensor and round to 4 decimal places
 
         # x is B x T
-        out = self.embedding(x)
+        embedded = self.embedding(x)
         # out is now B x T x embed_dim
-        out = torch.mean(out, dim=1)    # average across the columns to get the average embedding vector for each sentence / row in B
-        # decision to average the embedding vectors makes this a "Bag of Words" model
+        averaged = torch.mean(embedded, dim=1)    # average across the columns to get the average embedding vector for each sentence / row in B
+        # decision to average the embedding vectors across each word in a sentence makes this a "Bag of Words" model
         # out is now B x embed_dim
-        out = self.linear_layer(out)
+        projected = self.linear_layer(averaged)
         # out is now B x 1
-        out = self.sigmoid(out)
-        return torch.round(out, decimals=4)
+        predictions = self.sigmoid(projected)
+        return torch.round(predictions, decimals=4)
