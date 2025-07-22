@@ -3,6 +3,10 @@ import torch.nn as nn
 from torchtyping import TensorType
 from typing import List
 
+# This is the process of tokenization, arbitrarily encoding words into integers
+# With these encoded tokens, the next step is to get an embedding vector that represents the actual semantic meaning of the word
+# Embedding vectors are randomly initialized then trained and updated over many iterations to learn the relationship between words in a vectorized space
+
 # torch.tensor(python_list) returns a Python list as a tensor
 class Solution:
     def get_dataset(self, positive: List[str], negative: List[str]) -> TensorType[float]:
