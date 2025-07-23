@@ -18,11 +18,11 @@ class Solution(nn.Module):
 
         # x is B x T
         embedded = self.embedding(x)
-        # out is now B x T x embed_dim
+        # embedded is now B x T x embed_dim
         averaged = torch.mean(embedded, dim=1)    # average across the columns to get the average embedding vector for each sentence / row in B
         # decision to average the embedding vectors across each word in a sentence makes this a "Bag of Words" model
-        # out is now B x embed_dim
+        # averaged is now B x embed_dim
         projected = self.linear_layer(averaged)
-        # out is now B x 1
+        # projected is now B x 1
         predictions = self.sigmoid(projected)
         return torch.round(predictions, decimals=4)

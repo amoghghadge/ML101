@@ -12,3 +12,4 @@ class Solution:
         Y = [[tokens[i] for i in range(idx.item() + 1, idx.item() + 1 + context_length)] for idx in idxs]
         return (X, Y)
         # requires len(tokens) > context_length, as for any index you need to be able to get context_length tokens after it
+        # X and Y both have dimension batch_size x context_length
