@@ -40,8 +40,64 @@
 
 - Every token goes from being embedded with size embedding_dim (T x C) to every token emitting a query with size attention dim (T x attention_dim) to represent what the token is looking for
 
+- Can be represented as a linear layer (nn.Linear, embedding_dim, att_dim) to generate the queries for every single token
+
 #### What is K (Key)?
 
-- Every token should also emit a key vector (of size attention_dim) representing the information it has
+- Every token also emitts a key vector (of size attention_dim) representing the information it has
 
 - The queries are then matched up with keys, pairing up tokens that are relevant and then learning the T x T scores
+
+- Will also be represented as a linear layer (nn.Linear, embedding_dim, att_dim) which has its trainiable weights and biases
+
+#### Computation
+
+- We take the query matrix (which is T x A) and matrix multiply that with K transpose (which becomes A x T) to get T x T attention scores
+
+- In first matrix each row is the query, in second matrix each column is the key
+
+- In effect this makes each token's query vector get dot producted with the key vector for every token, to essentially match up and answer questions / create token pairings
+
+- Dot product is a measure of how similar two vectors are to each other, makes sense in the context of the matrix multiplication described above
+
+- The tokens whose queries and keys match up have a higher value coming out of the dot product, and essentially are important to each other
+
+#### Why dot product represents similarity
+
+- For example vectors [1, 0] and [0, 1] when plotted are completely perpendicular (they are not close at all and their dot product is 0)
+
+- Vectors [3, 2] and [2, 3] when plotted actually are close together, and have a dot product score of 12 (3 * 2 + 2 * 3)
+
+- Vectors [3, 3] and [3, 3] which are exactly identical have an even higher dot product of 18
+
+#### Softmax normalization
+
+- After generating T x T tensor we apply softmax (which kind of acts like a multi-dimensional sigmoid) to squash everything to be between 0 and 1
+
+- It will also make everything positive (because it uses exponential function) and sum to 1 (because each value is divided by the total vector sum)
+
+- Is applied to every row in the T x T tensor of attention scores, so every row sums to 1 and every entry in each row is positive and between 0 and 1
+
+- Given a row, which corresponds to a token, each column in that row represents probabilities of that token's relevance to the row's token
+
+#### Final layer output
+
+- Once we have the normalized T x T scores, we multiply it by V (instead of the T x C input like the simple aggregation example)
+
+- This is done because every token will also actually emit a value vector of size attention_dim (also learned and trained with a linear layer)
+
+- This adds another level of complexity to the model: if the query is what a token searching for and the key is what the token actually has, we want the value to represent what is the token actually willing to share
+
+- There are various pieces of information associated with every token (in the key) but the value is what information is actually relevant and that I actually want to share
+
+- We don't want to actually share everything to the entire unmasked (T x C) input
+
+- We instead allow V to be learned so the model can understand for every token what information is actually relevant to share with the other tokens
+
+- This lets the model decouple where to look (K and Q) from what actual content is passed forward (V)
+
+#### Why divide by sqrt(dk) before we apply softmax
+
+- dk = attention_dim
+
+- This is just a scale factor researchers found to prevent NNs suffer from exploding/vanishing gradient (where values of derivatives during training either get way too big or way too small)
