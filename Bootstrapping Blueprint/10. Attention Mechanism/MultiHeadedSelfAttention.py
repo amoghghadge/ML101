@@ -44,10 +44,18 @@ class MultiHeadedSelfAttention(nn.Module):
 
             return scores @ v
 
-embedding_dim=3
-attention_dim=4
-num_heads=2
-embedded=torch.randn(2,2,3)
+embedding_dim = 3
+attention_dim = 4
+num_heads = 2
+embedded = torch.randn(2,2,3)
 
-ans = MultiHeadedSelfAttention(embedding_dim, attention_dim, num_heads)
-print(ans(embedded))
+model = MultiHeadedSelfAttention(embedding_dim, attention_dim, num_heads)
+print(model(embedded))
+# 2 x 2 x 4 tensor
+# tensor([
+#           [[ 0.2498,  0.0799,  0.2498,  0.0799],
+#            [ 0.1741,  0.1591,  0.1741,  0.1591]],
+
+#           [[ 0.5066, -0.2618,  0.5066, -0.2618],
+#            [ 0.2242, -0.1660,  0.2242, -0.1660]]
+#       ])

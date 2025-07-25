@@ -25,6 +25,7 @@ class Solution:
         tensors = []
         for s in strings:
             tensors.append(torch.tensor([mapping[w] for w in s.split()]))
+        # pad into B x T tensor
         return torch.nn.utils.rnn.pad_sequence(tensors, batch_first=True)
     
     def better_get_dataset(self, positive: List[str], negative: List[str]) -> TensorType[float]:
@@ -55,3 +56,11 @@ class Solution:
         for s in strings:
             tensors.append(torch.tensor([mapping[w] for w in getWords(s)]))
         return torch.nn.utils.rnn.pad_sequence(tensors, batch_first=True)
+    
+ans = Solution()
+
+positive = ["Dogecoin to the moon"]
+negative = ["I will short Tesla today"]
+print(ans.get_dataset(positive, negative))
+# 2 x 5 tensor
+# tensor([[1, 7, 6, 4, 0], [2, 9, 5, 3, 8]])

@@ -27,14 +27,15 @@ class SingleHeadAttention(nn.Module):
         # input is B x T x C
         # queries is B x T x A, keys is B x A x T
         queries = self.query(embedded)
+        B, T, C, A = embedded.shape[0], embedded.shape[1], embedded.shape[2], queries.shape[2]
         keys = torch.transpose(self.key(embedded), 1, 2)
 
         # generate scores of size B x T x T
         scores = queries @ keys
-        scores /= (queries.shape[2] ** 0.5)
+        scores /= (A ** 0.5)
 
         # do masking
-        mask = torch.tril(torch.ones(embedded.shape[1], embedded.shape[1])) == 0
+        mask = torch.tril(torch.ones(T, T)) == 0
         scores.masked_fill_(mask, float('-inf'))
 
         # apply softmax
@@ -46,3 +47,18 @@ class SingleHeadAttention(nn.Module):
         # get layer's output of B x T x A
         out = scores @ values
         return torch.round(out, decimals=4)
+    
+embedding_dim = 3
+attention_dim = 4
+embedded = torch.randn(2, 2, 3)
+
+model = SingleHeadAttention(embedding_dim, attention_dim)
+print(model(embedded))
+# 2 x 2 x 4 tensor
+# tensor([
+#          [[-6.2060e-01, -3.0590e-01,  9.0000e-04,  3.6430e-01],
+#           [-1.8000e-03, -2.5020e-01,  3.3730e-01, -2.3510e-01]],
+# 
+#          [[ 1.1870e-01, -2.9230e-01, -8.6350e-01, -1.8560e-01],
+#           [ 2.8840e-01,  5.5500e-02, -1.1352e+00, -4.8900e-02]]
+#       ])

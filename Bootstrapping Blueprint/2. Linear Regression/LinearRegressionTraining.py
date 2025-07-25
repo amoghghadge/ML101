@@ -95,6 +95,7 @@ X = np.array([
 ])
 Y = np.array([6, 3])
 num_iterations = 10
-initial_weights = np.array([0.2, 0.1,0.6])
+initial_weights = np.array([0.2, 0.1, 0.6])
 
 print(ans.train_model(X, Y, num_iterations, initial_weights))
+# [0.50678 0.59057 1.27435]

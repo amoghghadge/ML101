@@ -26,3 +26,22 @@ class Solution(nn.Module):
         # projected is now B x 1
         predictions = self.sigmoid(projected)
         return torch.round(predictions, decimals=4)
+
+vocabulary_size = 170000
+
+# 2 x 12 tensor
+x = torch.tensor([
+  [2, 7, 14, 8, 0, 0, 0, 0, 0, 0, 0, 0],    # "The movie was okay"
+  [1, 4, 12, 3, 10, 5, 15, 11, 6, 9, 13, 7] # "I don't think anyone should ever waste their money on this movie"
+])
+
+model = Solution(vocabulary_size)
+print(model(x))
+# 2 x 1 output
+# tensor([[0.5963],[0.5199]])
+
+# 2 x 2 tensor
+x = torch.tensor([[4,1],[2,3]])
+print(model(x))
+# 2 x 1 output
+# tensor([[0.4293],[0.4035]])

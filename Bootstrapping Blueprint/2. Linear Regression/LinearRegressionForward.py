@@ -48,6 +48,7 @@ weights = np.array([
 ])
 # 2 x 1 matrix
 print(ans.get_model_prediction(X, weights))
+# [[4.47195], [1.37868]]
 
 # 3 x 1 matrix
 predictions = np.array([
@@ -63,3 +64,4 @@ labels = np.array([
 ])
 # Float value
 print(ans.get_error(predictions, labels))
+# 0.33785
