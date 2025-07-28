@@ -78,7 +78,7 @@
 
 - Is applied to every row in the T x T tensor of attention scores, so every row sums to 1 and every entry in each row is positive and between 0 and 1
 
-- Given a row, which corresponds to a token, each column in that row represents probabilities of that token's relevance to the row's token
+- Given a row, which corresponds to a token, each column in that row represents probability of the column token's relevance to the row's token
 
 #### Final layer output
 
@@ -95,6 +95,10 @@
 - We instead allow V to be learned so the model can understand for every token what information is actually relevant to share with the other tokens
 
 - This lets the model decouple where to look (K and Q) from what actual content is passed forward (V)
+
+- Matrix multiplication becomes lookup/aggregation of each weighting of token relationships for a sequence (in T x T matrix of scores) with how much each of those tokens are actually willing to share (in T x A matrix V) in attention_dim vector space
+
+- Essentially results in T x A output of what each token needs to pay attention to based on all tokens that came before it
 
 #### Why divide by sqrt(dk) before we apply softmax
 
