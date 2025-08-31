@@ -16,7 +16,7 @@
 
 ### Self attention layer
 
-- Come up with a T x T tensor of attention weights/scores to figure out how important each token is to every other token
+- Come up with a T x T tensor of attention weights/scores to figure out how important each token is to every other token through a communication mechanism
 
 - Is always lower triangular because one token can never see future tokens
 
