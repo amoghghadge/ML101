@@ -15,10 +15,14 @@ class MultiHeadedSelfAttention(nn.Module):
 
     def forward(self, embedded: TensorType[float]) -> TensorType[float]:
         # Return answer to 4 decimal places
-        out = self.attenion_heads[0](embedded)
-        for i in range(1, len(self.attenion_heads)):
-            out = torch.cat((out, self.attenion_heads[i](embedded)), 2)
-        return torch.round(out, decimals=4)
+        # embedded is B x T x C - (batch_size, context_length, embedding_dim)
+        out = []
+
+        for i in range(len(self.attenion_heads)):
+            out.append(self.attenion_heads[i](embedded))
+
+        # final out becomes B x T x A - (batch_size, context_length, attention_dim)
+        return torch.round(torch.cat(out, 2), decimals=4)
         
     class SingleHeadAttention(nn.Module):
         def __init__(self, embedding_dim: int, attention_dim: int):

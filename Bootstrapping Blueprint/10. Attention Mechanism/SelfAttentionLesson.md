@@ -98,7 +98,7 @@
 
 - Matrix multiplication becomes lookup/aggregation of each weighting of token relationships for a sequence (in T x T matrix of scores) with how much each of those tokens are actually willing to share (in T x A matrix V) in attention_dim vector space
 
-- Essentially results in T x A output of what each token needs to pay attention to based on all tokens that came before it
+- Essentially results in T x A output of what each token needs to pay attention to based on all tokens that came before it (as a result of weighted aggregation with weights learned from T x T scores matrix)
 
 #### Why divide by sqrt(dk) before we apply softmax
 

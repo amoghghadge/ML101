@@ -11,7 +11,7 @@ class Solution(nn.Module):
         self.relu = nn.ReLU()       # introduces nonlinearity to allow model to learn more complex relationships
         self.dropout = nn.Dropout(0.2)
         self.final_layer = nn.Linear(512, 10)
-        self.sigmoid = nn.Sigmoid()     # makes all outputs between 0 and 1 to represent a probability
+        self.sigmoid = nn.Sigmoid()     # makes each output between 0 and 1 to represent a probability
     
     def forward(self, images: TensorType[float]) -> TensorType[float]:
         torch.manual_seed(0)

@@ -1,4 +1,5 @@
 class Solution:
+    # assumed to minimize the function x^2
     def get_minimizer(self, iterations: int, learning_rate: float, init: int) -> float:
         ans = init
 
