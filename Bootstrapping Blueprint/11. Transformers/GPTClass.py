@@ -41,6 +41,7 @@ class GPT(nn.Module):
         # linear_output is now B x T x V
         token_probs = nn.functional.softmax(linear_output, dim=2)
         # token_probs stays B x T x V and now represents probability of each token occuring next
+        # size is (batch_size, context_length, vocab_size)
         return torch.round(token_probs, decimals=4)
 
     # Do NOT modify the code below this line
