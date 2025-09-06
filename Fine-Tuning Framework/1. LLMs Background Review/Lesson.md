@@ -84,4 +84,40 @@
 
 - Alpha (learning rate) is usually a constant like 0.001 or 0.01 to reflect how fast / drastically we want to update / change our weights at every iteration. Small learning rate takes many iterations to converge / training process to complete. High learning rate causes weights to change too much every iteration and not end up with a well performing model
 
-- d is a 
+- d is the derivative of the loss function with respect to the weights we are updating
+
+- Over many iterations this process lets us update our weights and optimize the model
+
+
+### Application of Gradient Descent to Fine-Tuning
+
+- Fine-tuning is just further training of the model with a different dataset. We perform gradient descent and update the weights/parameters of our model even further
+
+- Pseudocode (similar to PyTorch training loop)
+
+```
+for i in range(iterations):
+    pred = model(data)
+    loss = loss_function(pred, true)
+    loss.backward()     # calculates every derivative we need for the previous gradient descent equation (derivative of loss w.r.t. every single weight in the model, stored for future use)
+    optimizer.step()    # actually updates our weights by subtracting out alpha * derivatives
+    optimizer.zero_grad()   # update our gradients to be 0 to reset them and prevent them carrying over for future iterations
+```
+
+### Transformers Library Trainer Class
+
+- For PyTorch neural networks, we have to write the training loop directly by calling the forward method for the model, calculating the loss, calculating derivatives, and calling step on our optimizer all by ourselves
+
+- The training loop code is abstracted away from us by using the Trainer class from the Transformers library
+
+- General workflow of how training works
+
+```
+Load the model we want to use
+Define an object called Training Arguments (stores hyperparameters like number of training iterations, learning rate, batch size)
+# Define our Trainer from trainer class
+trainer = transformers.Trainer(model object to train, dataset on which we want to train / fine-tune on, training arguments)
+trainer.train()     # abstracts away training loop, we don't need to write it
+```
+
+- Batch size is how many examples we use in parallel at every iteration of training
