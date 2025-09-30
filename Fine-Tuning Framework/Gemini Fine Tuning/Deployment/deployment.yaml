@@ -1,0 +1,39 @@
+    apiVersion: apps/v1
+    kind: Deployment
+    metadata:
+      name: minecraft-llm-deployment
+    spec:
+      replicas: 1 # Start with one pod
+      selector:
+        matchLabels:
+          app: minecraft-llm
+      template:
+        metadata:
+          labels:
+            app: minecraft-llm
+        spec:
+          containers:
+          - name: minecraft-llm-container
+            # --- IMPORTANT ---
+            # Replace with your ECR image URI
+            image: <ACCOUNT_ID>.dkr.ecr.<REGION>.amazonaws.com/minecraft-llm-api:latest
+            ports:
+            - containerPort: 8000
+            resources:
+              limits:
+                # Request 1 GPU for this pod
+                nvidia.com/gpu: 1
+    ---
+    apiVersion: v1
+    kind: Service
+    metadata:
+      name: minecraft-llm-service
+    spec:
+      # This will create an AWS Network Load Balancer to expose the service
+      type: LoadBalancer
+      selector:
+        app: minecraft-llm
+      ports:
+      - protocol: TCP
+        port: 80 # The port the public will access
+        targetPort: 8000 # The port your container is running on

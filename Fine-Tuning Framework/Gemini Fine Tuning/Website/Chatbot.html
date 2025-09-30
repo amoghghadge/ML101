@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MineLLM Chat</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #1a202c; /* A dark slate color */
+            background-image: url('https://www.transparenttextures.com/patterns/dark-denim-3.png');
+        }
+        /* Custom scrollbar for a modern look */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #2d3748;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #4a5568;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #718096;
+        }
+        /* Three-dot loading animation */
+        .loading-dots span {
+            animation: blink 1.4s infinite both;
+            display: inline-block;
+        }
+        .loading-dots span:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+        .loading-dots span:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+        @keyframes blink {
+            0% { opacity: 0.2; }
+            20% { opacity: 1; }
+            100% { opacity: 0.2; }
+        }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen p-4">
+
+    <div class="w-full max-w-2xl h-[90vh] bg-[#2D3748] rounded-2xl shadow-2xl flex flex-col overflow-hidden border border-gray-700">
+        
+        <!-- Header -->
+        <header class="bg-[#1A202C] text-white p-4 text-center shadow-md z-10">
+            <h1 class="text-xl md:text-2xl font-semibold">MineLLM Chat</h1>
+            <p class="text-xs text-gray-400">Your AI Expert for Minecraft</p>
+        </header>
+
+        <!-- Chat History -->
+        <main id="chat-history" class="flex-1 p-6 overflow-y-auto space-y-6">
+            <!-- Initial Bot Message -->
+            <div class="flex gap-3 items-start">
+                <div class="w-10 h-10 bg-emerald-800 flex-shrink-0 rounded-full flex items-center justify-center border-2 border-emerald-600">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-bot"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 14h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/></svg>
+                </div>
+                <div class="bg-gray-700 p-4 rounded-xl max-w-md">
+                    <p class="text-sm text-gray-200">Welcome! I'm a fine-tuned LLM ready to answer your Minecraft questions.</p>
+                </div>
+            </div>
+        </main>
+
+        <!-- Input Form -->
+        <footer class="p-4 bg-[#1A202C]">
+            <form id="chat-form" class="flex items-center gap-4">
+                <input 
+                    type="text" 
+                    id="user-input"
+                    placeholder="e.g., How do I make a golden apple?"
+                    class="flex-1 p-3 bg-gray-700 border-2 border-gray-600 rounded-lg text-sm text-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 placeholder-gray-400"
+                    autocomplete="off"
+                >
+                <button type="submit" class="bg-emerald-600 hover:bg-emerald-700 text-white p-3 rounded-lg flex items-center justify-center transition-colors duration-200">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-send-horizontal"><path d="m3 3 3 9-3 9 19-9Z"/><path d="M6 12h16"/></svg>
+                </button>
+            </form>
+        </footer>
+    </div>
+
+    <script>
+        const chatForm = document.getElementById('chat-form');
+        const userInput = document.getElementById('user-input');
+        const chatHistory = document.getElementById('chat-history');
+        
+        // IMPORTANT: Replace this with your ngrok URL
+        const apiUrl = 'https://thievishly-berryless-ashlyn.ngrok-free.dev/ask';
+
+        chatForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const question = userInput.value.trim();
+            if (!question) return;
+
+            // Display user's message
+            addMessage(question, 'user');
+            userInput.value = '';
+            
+            // Show loading indicator
+            const loadingIndicator = addMessage('', 'bot', true);
+
+            try {
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ question: question }),
+                });
+
+                loadingIndicator.remove();
+
+                if (!response.ok) {
+                    const errorData = await response.text();
+                    throw new Error(`HTTP error! Status: ${response.status}, Body: ${errorData}`);
+                }
+
+                const data = await response.json();
+                
+                addMessage(data.answer, 'bot');
+
+            } catch (error) {
+                console.error('Error fetching API:', error);
+                loadingIndicator.remove();
+                addMessage('Sorry, I ran into an error. Please check the console and server logs.', 'bot');
+            }
+        });
+
+        function addMessage(text, sender, isLoading = false) {
+            const messageContainer = document.createElement('div');
+            const messageContent = document.createElement('div');
+            const iconContainer = document.createElement('div');
+            
+            messageContainer.classList.add('flex', 'gap-3', 'items-start');
+            messageContent.classList.add('p-4', 'rounded-xl', 'max-w-md');
+            iconContainer.classList.add('w-10', 'h-10', 'rounded-full', 'flex', 'items-center', 'justify-center', 'flex-shrink-0');
+
+            if (sender === 'user') {
+                messageContainer.classList.add('justify-end');
+                messageContent.classList.add('bg-emerald-700', 'text-white');
+                iconContainer.classList.add('bg-gray-600', 'border-2', 'border-gray-500');
+                iconContainer.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-user"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`;
+                messageContainer.appendChild(messageContent);
+                messageContainer.appendChild(iconContainer);
+            } else { // 'bot'
+                messageContent.classList.add('bg-gray-700', 'text-gray-200');
+                iconContainer.classList.add('bg-emerald-800', 'border-2', 'border-emerald-600');
+                iconContainer.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-bot"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 14h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/></svg>`;
+                messageContainer.appendChild(iconContainer);
+                messageContainer.appendChild(messageContent);
+            }
+
+            if (isLoading) {
+                 messageContent.innerHTML = `<div class="loading-dots text-gray-400"><span>.</span><span>.</span><span>.</span></div>`;
+            } else {
+                messageContent.innerHTML = `<p class="text-sm">${text}</p>`;
+            }
+
+            chatHistory.appendChild(messageContainer);
+            chatHistory.scrollTop = chatHistory.scrollHeight;
+            return messageContainer;
+        }
+    </script>
+</body>
+</html>
+

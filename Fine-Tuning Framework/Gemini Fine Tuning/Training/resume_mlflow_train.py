@@ -6,7 +6,7 @@ from peft import LoraConfig
 from trl import SFTConfig, SFTTrainer
 import mlflow
 
-# --- FIX --- Only the main process (rank 0) sets up the experiment
+# Only the main process (rank 0) sets up the experiment
 local_rank = int(os.environ.get("LOCAL_RANK", 0))
 if local_rank == 0:
     mlflow.set_experiment("Gemma 3 12B Minecraft Fine-Tuning")
@@ -18,7 +18,7 @@ torch.cuda.set_device(local_rank)
 # Define Model and Dataset IDs
 model_id = "google/gemma-3-12b-it"
 dataset_id = "amoghghadge/gemma-3-12b-mc-qa-dataset" 
-new_model_id = "amoghghadge/gemma-3-12b-mc-qa-2" # Changed name for new model
+new_model_id = "amoghghadge/gemma-3-12b-mc-qa-2"
 
 # Configure Quantization and Model Arguments
 torch_dtype = torch.bfloat16
@@ -40,7 +40,6 @@ tokenizer.pad_token = tokenizer.eos_token
 
 # Configure PEFT (LoRA)
 peft_config = LoraConfig(
-    # --- TUNED --- Increased alpha and rank for more model capacity
     lora_alpha=64,
     lora_dropout=0.05,
     r=32,
@@ -54,16 +53,17 @@ dataset = load_dataset(dataset_id, split="train")
 
 # Define Training Arguments
 args = SFTConfig(
-    output_dir="gemma-3-12b-mc-qa-tuned-checkpoints", 
+    output_dir="gemma-3-12b-mc-qa-2-checkpoints", 
     hub_model_id=new_model_id,
-    # --- TUNED --- Increased epochs for more training time
     num_train_epochs=3,
     per_device_train_batch_size=1,
     gradient_accumulation_steps=4,
     gradient_checkpointing=False,
     optim="paged_adamw_8bit",
     logging_steps=25,
-    save_strategy="epoch",
+    # --- FIX --- Change save strategy to steps for robustness
+    save_strategy="steps",
+    save_steps=500, # Save a checkpoint every 500 steps
     learning_rate=2e-5,
     bf16=True,
     max_grad_norm=0.3,
@@ -82,13 +82,12 @@ trainer = SFTTrainer(
     args=args,
     train_dataset=dataset,
     peft_config=peft_config,
-    processing_class=tokenizer, # Corrected based on your working script
+    processing_class=tokenizer, # This is the correct argument for your environment
 )
 
-# --- FIX --- Start a single MLFlow run only on the main process
-with mlflow.start_run(run_name=f"r_{peft_config.r}_alpha_{peft_config.lora_alpha}_epochs_{args.num_train_epochs}"):
+# Start a new MLFlow run
+with mlflow.start_run(run_name=f"r_{peft_config.r}_alpha_{peft_config.lora_alpha}_epochs_{args.num_train_epochs}_resumed"):
     if local_rank == 0:
-        # Log hyperparameters
         mlflow.log_params({
             "model_id": model_id,
             "dataset_id": dataset_id,
@@ -98,7 +97,8 @@ with mlflow.start_run(run_name=f"r_{peft_config.r}_alpha_{peft_config.lora_alpha
             "epochs": args.num_train_epochs,
         })
     
-    # Train the model
-    trainer.train()
+    # --- IMPORTANT ---
+    # For this FIRST run with the new save strategy, you must start from scratch.
+    # For any FUTURE runs that get interrupted, you can add 'resume_from_checkpoint=True'
+    trainer.train(resume_from_checkpoint=True)
 
-# The model is automatically saved to the Hub by the trainer.
