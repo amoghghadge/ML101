@@ -117,7 +117,7 @@ context_length = 2
 model_dim = 4
 num_blocks = 2
 num_heads = 2
-context = [[2, 0], [2, 0]]
+context = torch.tensor([[2, 0], [2, 0]], dtype=torch.long)
 
 model = GPT(vocab_size, context_length, model_dim, num_blocks, num_heads)
 print(model(context))
@@ -132,3 +132,162 @@ print(model(context))
 #   ]
 # ]
 # 2 x 2 x 3
+
+# --- Data Preparation ---
+
+# 1. Create a simple dataset and vocabulary (using dataset of all of Shakespeare's writings)
+with open('input.txt', 'r', encoding='utf-8') as f:
+    text = f.read()
+chars = sorted(list(set(text)))
+vocab_size = len(chars)
+
+string_to_int = { ch:i for i,ch in enumerate(chars) }
+int_to_string = { i:ch for i,ch in enumerate(chars) }
+encode = lambda s: [string_to_int[c] for c in s]
+decode = lambda l: ''.join([int_to_string[i] for i in l])
+
+# 2. Create the input and target tensors
+# The model will learn to predict the next character in the sequence.
+data = torch.tensor(encode(text), dtype=torch.long)
+n = int(0.9*len(data)) # 90% for training, 10% for validation (not used in this simple loop)
+train_data = data[:n]
+val_data = data[n:]
+
+# 3. Define a function to get input/target batches
+context_length = 8 # Let's use a context length of 8 for this example
+batch_size = 4
+
+def get_batch(split):
+    data = train_data if split == 'train' else val_data
+    # Generate random starting points for our batches
+    ix = torch.randint(len(data) - context_length, (batch_size,))
+    # Create the input tensors (x)
+    x = torch.stack([data[i:i+context_length] for i in ix])
+    # Create the target tensors (y), which are shifted by one position
+    y = torch.stack([data[i+1:i+context_length+1] for i in ix])
+    return x, y
+
+# Test the batch function
+xb, yb = get_batch('train')
+print("--- Sample Batch ---")
+print("inputs (xb):")
+print(xb)
+print("\ntargets (yb):")
+print(yb)
+print("--------------------")
+
+# --- Model, Optimizer, and Loss Setup ---
+
+# Model Hyperparameters
+# NOTE: We are overwriting the small values from your initial test case
+# with more realistic ones for training.
+vocab_size = len(chars)
+context_length = 8      # Max length of a sequence
+model_dim = 32          # Embedding dimension
+num_blocks = 3          # Number of transformer blocks
+num_heads = 4           # Number of attention heads
+learning_rate = 1e-3    # Learning rate for the optimizer
+
+# 1. Instantiate the model
+model = GPT(
+    vocab_size=vocab_size,
+    context_length=context_length,
+    model_dim=model_dim,
+    num_blocks=num_blocks,
+    num_heads=num_heads
+)
+
+# 2. Define the loss function
+# CrossEntropyLoss is perfect for multi-class classification like ours.
+criterion = nn.CrossEntropyLoss()
+
+# 3. Instantiate the Adam optimizer
+optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate)
+
+print("\n--- Model & Optimizer Ready ---")
+print(f"Model created with {sum(p.numel() for p in model.parameters())} parameters.")
+print("Optimizer: AdamW")
+print("Loss Function: CrossEntropyLoss")
+print("-----------------------------")
+
+# --- The Training Loop ---
+
+# Training Hyperparameters
+epochs = 15000
+eval_interval = 500 # How often to print the loss
+
+print("\n--- Starting Training ---")
+
+for epoch in range(epochs):
+
+    # 1. Get a batch of data
+    xb, yb = get_batch('train')
+
+    # 2. Get model predictions
+    logits = model(xb) # The forward pass
+
+    # 3. Calculate the loss
+    # PyTorch's CrossEntropyLoss expects logits of shape (Batch, Classes, Sequence_Length)
+    # and targets of shape (Batch, Sequence_Length). We need to reshape our tensors.
+    B, T, C = logits.shape
+    logits_reshaped = logits.view(B*T, C)
+    targets_reshaped = yb.view(B*T)
+    loss = criterion(logits_reshaped, targets_reshaped)
+
+    # 4. Backpropagation
+    optimizer.zero_grad(set_to_none=True) # Zero out old gradients
+    loss.backward() # Calculate new gradients
+
+    # 5. Update weights
+    optimizer.step()
+
+    # Print loss every so often
+    if epoch % eval_interval == 0:
+        # Note: In a real project, you'd calculate validation loss here
+        # using a separate evaluation loop with torch.no_grad()
+        print(f"Epoch {epoch}, Training Loss: {loss.item():.4f}")
+
+print(f"Final Loss: {loss.item():.4f}")
+print("--- Training Complete ---")
+
+# --- Inference / Generation ---
+
+def generate(model, start_string, max_new_tokens):
+    model.eval() # Set the model to evaluation mode
+    
+    # Convert the starting string to a tensor of tokens
+    tokens = torch.tensor(encode(start_string), dtype=torch.long)
+    tokens = tokens.unsqueeze(0) # Add a batch dimension
+
+    for _ in range(max_new_tokens):
+        # Ensure context is not longer than context_length
+        # We only need the last `context_length` tokens for the prediction
+        context = tokens[:, -context_length:]
+        
+        # Get the model's predictions (logits)
+        with torch.no_grad():
+             logits = model(context)
+        
+        # We only care about the prediction for the very last token in the sequence
+        last_logits = logits[:, -1, :] # Becomes (B, C)
+        
+        # Apply softmax to get probabilities
+        probs = nn.functional.softmax(last_logits, dim=-1)
+        
+        # Sample from the probability distribution to get the next token
+        next_token = torch.multinomial(probs, num_samples=1)
+        
+        # Append the new token to our sequence
+        tokens = torch.cat((tokens, next_token), dim=1)
+
+    model.train() # Set the model back to training mode
+    return decode(tokens[0].tolist())
+
+# Let's generate some text!
+start_character = "h"
+generated_text = generate(model, start_string=start_character, max_new_tokens=20)
+
+print("\n--- Generating Text ---")
+print(f"Starting with: '{start_character}'")
+print(f"Generated sequence: {generated_text}")
+print("-----------------------")
